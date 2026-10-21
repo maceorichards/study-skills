@@ -10,17 +10,32 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, python: "3.9" }
           - { os: windows-latest, python: "3.9" }
           - { os: ubuntu-latest, python: "3.13" }
           - { os: windows-latest, python: "3.13" }
           - { os: macos-latest, python: "3.13" }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
+      - name: Check skills and helper copies
+        run: python tools/check.py
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: CLI smoke test
+        shell: bash
+        run: |
+          python src/study.py now
+          python install.py && exit 1 || test $? -eq 2
+
+  # setup-python has no 3.9 build for current Ubuntu runners, so test the minimum version in a container.
+  test-linux-py39:
+    runs-on: ubuntu-latest
+    container: python:3.9-slim
+    steps:
+      - uses: actions/checkout@v5
       - name: Check skills and helper copies
         run: python tools/check.py
       - name: Unit tests
